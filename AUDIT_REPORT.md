@@ -32,12 +32,13 @@
 
 ## Validation
 
-- Local npm run validate: PASS on the current code before release-prep changes; 15 tests, 0 failures.
-- GitHub Actions: passed on the previous branch revision. A final run is required after this release-prep commit.
+- Local npm run validate: PASS on the final extension/package snapshot after manifest corrections; 15 tests, 0 failures.
+- GitHub Actions: PASS on release-preparation code commit fa783fccf12246b4efcdbe360bc3374dfbd1a0f8; see https://github.com/k20ali/account-per-container/actions/runs/42065344946.
 - Maintainer-reported smoke test: user reports trying the test build and observing no problems; detailed browser version/scenarios are not recorded.
+- AMO upload archive: created from production extension files only, with manifest.json at the ZIP root; file list, manifest and locales verified.
 - web-ext lint/build: NOT RUN here because npm registry DNS resolution failed.
 - AMO validator, signing, and reviewer approval: NOT RUN.
 
 ## Release decision
 
-Prepared for AMO validation, not yet submitted. The extension targets desktop Firefox 140+, keeps readable/unminified source, declares authenticationInfo and browsingActivity, includes a draft privacy policy and listing content, and retains the upstream MPL-2.0 license. Name/slug availability is not reserved. Final packaging and AMO validation remain required.
+Prepared for AMO validation, not yet submitted. The extension targets desktop Firefox 140+, keeps readable/unminified source, declares authenticationInfo and browsingActivity, includes a draft privacy policy and listing content, and retains the upstream MPL-2.0 license. The user reports a smoke test without observed issues; exact browser version and cases are not recorded. Name/slug availability is not reserved. A live check of the exact final package, web-ext validation, and AMO validation remain required.

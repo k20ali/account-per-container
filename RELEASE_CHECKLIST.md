@@ -13,10 +13,10 @@
 
 ## Validation
 
-- [x] Local npm run validate passed on the preceding code revision: 15 tests, 0 failures.
-- [x] GitHub Actions passed on the previous branch revision.
+- [x] Local npm run validate passed on the final extension/package snapshot: 15 tests, 0 failures.
+- [x] GitHub Actions passed on the release-preparation code commit; see the linked final successful run in the PR.
+- [x] AMO upload ZIP created with manifest.json at ZIP root; content list and SHA-256 verified.
 - [x] Maintainer-reported smoke test: user says they tested the extension and observed no problems; Firefox version and detailed scenarios are not recorded.
-- [ ] Confirm a successful CI run for the final release-prep commit.
 - [ ] Run web-ext lint and web-ext build in a network-enabled environment. They could not be installed in this environment because npm registry DNS resolution failed.
 - [ ] Re-test the final packaged ZIP in Firefox desktop 140+.
 - [ ] Record Firefox version and the scenarios actually exercised in LIVE_TEST_PLAN.md.
@@ -48,4 +48,4 @@ The generated ZIP is in the artifacts folder. Upload the ZIP containing the exte
 
 ## Current status
 
-Prepared for AMO validation, not yet submitted. The final branch CI run, final package smoke test, web-ext checks, AMO validator, signing, and review remain outstanding.
+Prepared for AMO validation, not yet submitted. CI and mocked tests passed, and the upload archive structure was checked. A live Firefox check of this exact final archive, web-ext lint/build, AMO validator, signing, and review remain outstanding.

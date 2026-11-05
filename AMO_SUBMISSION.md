@@ -29,7 +29,7 @@ The extension stores usernames, not passwords. It requests access to HTTP and HT
 
 Rules are stored with Firefox browser.storage.sync. If Add-ons synchronization is enabled in Firefox desktop Sync settings, saved rules may be synchronized through the user's Mozilla account. The maintainer does not operate a server for rule data and the extension contains no ads, analytics, tracking beacons, or remotely loaded code. See the privacy policy for the data handled and synchronization details.
 
-This is an independently maintained fork of https://github.com/tiansh/account-per-container, with changes to rule persistence, URL and tab-context validation, dynamic login-field detection, and repository tests. It is not affiliated with the original author.
+This is an independently maintained fork of https://github.com/tiansh/account-per-container, with changes to rule persistence, URL and tab-context validation, dynamic login-field detection, and repository tests. It is not affiliated with the original author. The distinctive name is intentional: Mozilla's fork policy expects the name to clearly distinguish the fork and the code/functionality to differ significantly.
 
 **Categories:** Choose Privacy & Security as the primary category if it is offered. Select a second category only if the current AMO form offers a clearly relevant choice.
 
