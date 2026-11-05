@@ -1,18 +1,21 @@
 {
   "extensionName": {
-    "message": "Account Per Container"
+    "message": "Container Username Assistant"
   },
   "extensionDescription": {
-    "message": "使用容器打开网站时，自动选择登录用的用户名"
+    "message": "使用 Firefox 容器记住网站用户名，并在以后访问时自动填写。"
   },
   "extensionButtonTitle": {
-    "message": "添加容器用户规则"
+    "message": "添加容器用户名规则"
   },
   "inputUsernameNotice": {
-    "message": "在网页中输入用户名后可以在这里添加规则"
+    "message": "请先在网页中输入用户名，然后可在这里添加规则。"
+  },
+  "noPageContextNotice": {
+    "message": "当前标签页没有可用的登录表单。请在 Firefox 容器中打开 HTTP 或 HTTPS 页面后重试。"
   },
   "addRuleNotice": {
-    "message": "您要在每次使用容器 {container} 访问 {host} 时自动填写用户名 {username} 吗？"
+    "message": "下次在容器 {container} 中访问 {host} 时，是否使用用户名 {username}？"
   },
   "addRuleConfirm": {
     "message": "添加规则"
@@ -21,10 +24,10 @@
     "message": "更新规则"
   },
   "addedRuleNotice": {
-    "message": "规则已添加。下次使用容器 {container} 访问 {host} 时会自动填写用户名 {username}。"
+    "message": "规则已保存。下次在容器 {container} 中访问 {host} 时会填写用户名 {username}。"
   },
   "optionsTableHost": {
-    "message": "站点"
+    "message": "网站"
   },
   "optionsTableContainer": {
     "message": "容器"
@@ -36,6 +39,6 @@
     "message": "删除"
   },
   "emptyRuleList": {
-    "message": "在容器内访问网站的登录页，输入用户名后可在地址栏找到添加规则的按钮。"
+    "message": "在 Firefox 容器中打开网站登录页并输入用户名，然后点击地址栏中的扩展图标即可创建规则。"
   }
 }

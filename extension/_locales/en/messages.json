@@ -1,54 +1,58 @@
 {
   "extensionName": {
-    "message": "Account Per Container",
-    "description": "Name of the extension; Should be kept as is when localizing."
+    "message": "Container Username Assistant",
+    "description": "Proposed distinct name for this fork; not an AMO approval."
   },
   "extensionDescription": {
-    "message": "Auto-fill username when you open websites in certain container.",
-    "description": "Description of the extension."
+    "message": "Remember a username for a website in a Firefox container and fill it on future visits.",
+    "description": "Description of this extension."
   },
   "extensionButtonTitle": {
     "message": "Add container username rule",
-    "description": "Text for page-action button"
+    "description": "Text for page-action button."
   },
   "inputUsernameNotice": {
-    "message": "Input username in webpage first before adding new rule.",
-    "description": "Notify user should input username in webpage first before adding new rule."
+    "message": "Enter a username in the webpage first. You can then add a rule here.",
+    "description": "Shown when no non-empty username is available."
+  },
+  "noPageContextNotice": {
+    "message": "No supported login form is available in this tab. Open an HTTP or HTTPS page in a Firefox container and try again.",
+    "description": "Shown when active-tab or container context is unavailable."
   },
   "addRuleNotice": {
-    "message": "Would you like to use {username} for {host} in {container} next time?",
-    "description": "Dialog when user try to add rules; Words in {} are placeholders, and they should not be localized."
+    "message": "Use {username} for {host} in {container} next time?",
+    "description": "Prompt to add a rule. Placeholders in braces must not be localized."
   },
   "addRuleConfirm": {
     "message": "Add Rule",
-    "description": "Button in dialog for confirm"
+    "description": "Button to add a rule."
   },
   "updateRuleConfirm": {
     "message": "Update Rule",
-    "description": "Button in dialog for confirm, old rule for different username already exist"
+    "description": "Button to update an existing rule."
   },
   "addedRuleNotice": {
-    "message": "Account per container rule added. Auto-fill {username} for {host} in {container} next time.",
-    "description": "Dialog to confirm rule added"
+    "message": "Rule saved. Next time, {username} will be filled for {host} in {container}.",
+    "description": "Confirmation after adding a rule."
   },
   "optionsTableHost": {
     "message": "Website",
-    "description": "Title of host column in options page"
+    "description": "Website column heading."
   },
   "optionsTableContainer": {
     "message": "Container",
-    "description": "Title of container column in options page"
+    "description": "Container column heading."
   },
   "optionsTableUsername": {
     "message": "User Name",
-    "description": "Title of username column in options page"
+    "description": "Username column heading."
   },
   "optionsRemoveButton": {
     "message": "Remove",
-    "description": "Button for remove a rule"
+    "description": "Button to remove a rule."
   },
   "emptyRuleList": {
-    "message": "To create rules, visit website login page in a container and type in your user name as normal. You will find an icon in address bar to add it here.",
-    "description": "Show tips to user when no rule added in options page."
+    "message": "To create a rule, open a login page in a Firefox container, enter a username, and click the extension icon in the address bar.",
+    "description": "Help text when no rules exist."
   }
 }

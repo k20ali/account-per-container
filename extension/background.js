@@ -1,140 +1,259 @@
 ; (async function () {
+  let writeQueue = Promise.resolve();
 
-  const writeRules = function (rules) {
-    return browser.storage.sync.set({ rules });
+  const writeRules = function (items) {
+    const snapshot = items.map(rule => ({
+      cookieStoreId: rule.cookieStoreId,
+      host: rule.host,
+      username: rule.username,
+    }));
+    const pending = writeQueue.catch(() => undefined).then(() => browser.storage.sync.set({ rules: snapshot }));
+    writeQueue = pending;
+    return pending;
   };
+
+  const normalizeHost = function (value) {
+    if (typeof value !== 'string' || !value.trim()) return null;
+    const candidate = value.trim().toLowerCase();
+    if (/[\s/?#@]/.test(candidate)) return null;
+    try {
+      const url = new URL('https://' + candidate);
+      if (url.username || url.password || url.pathname !== '/' || url.search || url.hash) return null;
+      if (url.host.toLowerCase() !== candidate) return null;
+      return url.host.toLowerCase();
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const normalizeRule = function (rule) {
+    if (!rule || typeof rule !== 'object') return null;
+    const cookieStoreId = typeof rule.cookieStoreId === 'string' ? rule.cookieStoreId.trim() : '';
+    const host = normalizeHost(rule.host);
+    const username = typeof rule.username === 'string' ? rule.username : null;
+    if (!cookieStoreId || !host || username === null || username.length === 0) return null;
+    return { cookieStoreId, host, username };
+  };
+
   const loadRules = async function () {
-    const rules = [];
-    const storaged = (await browser.storage.sync.get({ rules: [] })).rules;
-    if (Array.isArray(storaged)) {
-      storaged.forEach(rule => {
-        rules.push({
-          cookieStoreId: String(rule.cookieStoreId),
-          host: String(rule.host),
-          username: String(rule.username),
-        });
+    const stored = (await browser.storage.sync.get({ rules: [] })).rules;
+    const unique = new Map();
+    if (Array.isArray(stored)) {
+      stored.forEach(rule => {
+        const normalized = normalizeRule(rule);
+        if (normalized) unique.set(normalized.cookieStoreId + '\u0000' + normalized.host, normalized);
       });
     }
-    if (JSON.stringify(rules) !== JSON.stringify(storaged)) {
-      await writeRules(rules);
-    }
-    return rules;
+    const loaded = Array.from(unique.values());
+    if (JSON.stringify(loaded) !== JSON.stringify(stored)) await writeRules(loaded);
+    return loaded;
   };
+
   /** @type {{cookieStoreId: string, host: string, username: string}[]} */
-  const rules = await loadRules();
+  const rules = [];
+  // Start loading immediately, but don't block listener registration on storage I/O.
+  const rulesReady = loadRules().then(loaded => {
+    rules.splice(0, rules.length, ...loaded);
+    return true;
+  }).catch(() => false);
   const getRule = function ({ cookieStoreId, host }) {
-    return rules.find(rule => rule.cookieStoreId === cookieStoreId && rule.host === host);
+    return rules.find(rule => rule.cookieStoreId === cookieStoreId && rule.host === host) || null;
   };
-
   const context = new Map();
-
   const handlers = {};
 
-  browser.runtime.onMessage.addListener(function ({ method, params = [] }, sender) {
-    return handlers[method](sender, ...params);
-  });
-
   const isContainedTab = async function (tab) {
+    if (!tab || typeof tab.cookieStoreId !== 'string' || !tab.cookieStoreId) return false;
     try {
       await browser.contextualIdentities.get(tab.cookieStoreId);
       return true;
-    } catch (e) {
+    } catch (error) {
       return false;
     }
   };
 
-  const isMyselfContained = async function (sender) {
-    return isContainedTab(sender.tab);
-  };
-  handlers.isMyselfContained = isMyselfContained;
-
-  const getTabInfo = async function (tab) {
-    const isContained = await isContainedTab(tab);
-    if (!isContained) return null;
-    const cookieStoreId = tab.cookieStoreId;
-    const host = new URL(tab.url).host;
-    const rule = getRule({ cookieStoreId, host });
-    return { cookieStoreId, host, rule };
-  };
-
-  const getPreferedUsername = async function (sender) {
-    const { rule } = (await getTabInfo(sender.tab)) || { rule: null };
-    return rule && rule.username;
-  };
-  handlers.getPreferedUsername = getPreferedUsername;
-
-  const enablePageAction = function (tabId, info) {
-    context.set(tabId, info);
-    browser.pageAction.show(tabId);
-  };
-
-  const revokePageAction = tabId => {
-    context.delete(tabId);
-    browser.pageAction.hide(tabId);
-  };
-
-  const onUsernameChange = async function (sender, username) {
-    if (username !== null) {
-      const info = await getTabInfo(sender.tab);
-      info.username = username;
-      enablePageAction(sender.tab.id, info);
-    } else {
-      revokePageAction(sender.tab.id);
+  const getHostFromUrl = function (value) {
+    if (typeof value !== 'string' || !value) return null;
+    try {
+      const url = new URL(value);
+      if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) return null;
+      return url.host.toLowerCase();
+    } catch (error) {
+      return null;
     }
   };
-  handlers.onUsernameChange = onUsernameChange;
+
+  const getTabInfo = async function (tab, urlHint) {
+    if (!tab || !Number.isInteger(tab.id)) return null;
+    const urlValue = typeof urlHint === 'string' ? urlHint : tab.url;
+    const host = getHostFromUrl(urlValue);
+    if (!host || !(await isContainedTab(tab))) return null;
+    const cookieStoreId = tab.cookieStoreId;
+    return { cookieStoreId, host, rule: getRule({ cookieStoreId, host }) };
+  };
+
+  handlers.isMyselfContained = async function (sender) {
+    return isContainedTab(sender && sender.tab);
+  };
+
+  handlers.getPreferedUsername = async function (sender) {
+    const info = await getTabInfo(sender && sender.tab, sender && sender.url);
+    return info && info.rule ? info.rule.username : undefined;
+  };
+
+  const enablePageAction = async function (tabId, info) {
+    context.set(tabId, info);
+    try {
+      await browser.pageAction.show(tabId);
+    } catch (error) {
+      if (context.get(tabId) === info) context.delete(tabId);
+    }
+  };
+
+  const revokePageAction = async function (tabId) {
+    context.delete(tabId);
+    try {
+      await browser.pageAction.hide(tabId);
+    } catch (error) {
+      // The tab may have closed between the event and this call.
+    }
+  };
+
+  handlers.onUsernameChange = async function (sender, username) {
+    const tab = sender && sender.tab;
+    if (!tab || !Number.isInteger(tab.id)) return false;
+    if (username === null) {
+      await revokePageAction(tab.id);
+      return true;
+    }
+    if (typeof username !== 'string') {
+      await revokePageAction(tab.id);
+      return false;
+    }
+    const info = await getTabInfo(tab, sender.url);
+    if (!info) {
+      await revokePageAction(tab.id);
+      return false;
+    }
+    info.username = username;
+    await enablePageAction(tab.id, info);
+    return true;
+  };
 
   browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
-    if (changeInfo.discarded || changeInfo.url) {
-      revokePageAction(tabId);
-    }
+    if (changeInfo && (changeInfo.discarded || changeInfo.url)) void revokePageAction(tabId);
   });
   browser.tabs.onRemoved.addListener(tabId => {
-    revokePageAction(tabId);
+    void revokePageAction(tabId);
   });
 
-  const getPageContext = async function () {
-    const [activeTab] = await browser.tabs.query({ currentWindow: true, active: true });
+  browser.contextualIdentities.onRemoved.addListener(changeInfo => {
+    const identity = changeInfo && changeInfo.contextualIdentity;
+    const cookieStoreId = identity && identity.cookieStoreId;
+    if (!cookieStoreId) return;
+    const retained = rules.filter(rule => rule.cookieStoreId !== cookieStoreId);
+    if (retained.length === rules.length) return;
+    rules.splice(0, rules.length, ...retained);
+    void writeRules(rules).catch(() => undefined);
+    for (const [tabId, info] of context) {
+      if (info.cookieStoreId === cookieStoreId) void revokePageAction(tabId);
+    }
+  });
+
+  handlers.getPageContext = async function () {
+    let tabs;
+    try {
+      tabs = await browser.tabs.query({ currentWindow: true, active: true });
+    } catch (error) {
+      return null;
+    }
+    const activeTab = Array.isArray(tabs) ? tabs[0] : null;
+    if (!activeTab || !Number.isInteger(activeTab.id)) return null;
     const info = context.get(activeTab.id);
-    info.rule = getRule(info);
-    return info;
-  };
-  handlers.getPageContext = getPageContext;
-
-  const addRule = async function (sender, rule) {
-    const cookieStoreId = rule.cookieStoreId;
-    const host = rule.host;
-    const username = rule.username;
-    const oldRule = getRule({ cookieStoreId, host });
-    if (!oldRule) {
-      rules.push({ cookieStoreId, host, username });
-    } else {
-      oldRule.username = username;
+    if (!info) return null;
+    const currentTabInfo = await getTabInfo(activeTab, activeTab.url);
+    if (!currentTabInfo || info.cookieStoreId !== currentTabInfo.cookieStoreId || info.host !== currentTabInfo.host) {
+      await revokePageAction(activeTab.id);
+      return null;
     }
-    await writeRules(rules);
+    return { ...info, rule: getRule(currentTabInfo) };
   };
-  handlers.addRule = addRule;
 
-  const getRuleList = async function () {
-    const contexts = await browser.contextualIdentities.query({});
-    const cleanup = rules.filter(rule => contexts.some(context => context.cookieStoreId === rule.cookieStoreId));
-    if (cleanup.length !== rules.length) {
-      rules.splice(0, rules.length, ...cleanup);
+  handlers.addRule = async function (sender, rule) {
+    const normalized = normalizeRule(rule);
+    if (!normalized) return false;
+    let identities;
+    try {
+      identities = await browser.contextualIdentities.query({});
+    } catch (error) {
+      return false;
+    }
+    if (!Array.isArray(identities) || !identities.some(identity => identity.cookieStoreId === normalized.cookieStoreId)) return false;
+    const oldRule = getRule(normalized);
+    const previousUsername = oldRule ? oldRule.username : null;
+    if (!oldRule) rules.push(normalized);
+    else oldRule.username = normalized.username;
+    try {
       await writeRules(rules);
+      return true;
+    } catch (error) {
+      if (!oldRule) {
+        const index = rules.indexOf(normalized);
+        if (index >= 0) rules.splice(index, 1);
+      } else {
+        oldRule.username = previousUsername;
+      }
+      throw error;
     }
-    return rules;
   };
-  handlers.getRuleList = getRuleList;
 
-  const removeRule = async function (sender, rule) {
-    const cookieStoreId = rule.cookieStoreId;
-    const host = rule.host;
-    const username = rule.username;
-    const oldRule = getRule({ cookieStoreId, host });
-    if (!oldRule) return;
-    const index = rules.indexOf(oldRule);
-    rules.splice(index, 1);
+  handlers.getRuleList = async function () {
+    let identities;
+    try {
+      identities = await browser.contextualIdentities.query({});
+    } catch (error) {
+      return rules.map(rule => ({ ...rule }));
+    }
+    if (!Array.isArray(identities)) return rules.map(rule => ({ ...rule }));
+    const contextIds = new Set(identities.map(identity => identity.cookieStoreId));
+    const retained = rules.filter(rule => contextIds.has(rule.cookieStoreId));
+    if (retained.length !== rules.length) {
+      const previous = rules.slice();
+      rules.splice(0, rules.length, ...retained);
+      try {
+        await writeRules(rules);
+      } catch (error) {
+        rules.splice(0, rules.length, ...previous);
+        throw error;
+      }
+    }
+    return rules.map(rule => ({ ...rule }));
   };
-  handlers.removeRule = removeRule;
 
+  handlers.removeRule = async function (sender, rule) {
+    if (!rule || typeof rule !== 'object') return false;
+    const cookieStoreId = typeof rule.cookieStoreId === 'string' ? rule.cookieStoreId : '';
+    const host = normalizeHost(rule.host);
+    if (!cookieStoreId || !host) return false;
+    const index = rules.findIndex(item => item.cookieStoreId === cookieStoreId && item.host === host);
+    if (index < 0) return false;
+    const removed = rules.splice(index, 1)[0];
+    try {
+      await writeRules(rules);
+      return true;
+    } catch (error) {
+      rules.splice(index, 0, removed);
+      throw error;
+    }
+  };
+
+  // Register synchronously so a freshly loaded content script can message us even while
+  // storage.sync is still initializing. Each handler waits for the initial snapshot.
+  browser.runtime.onMessage.addListener(function (message, sender) {
+    if (!message || typeof message.method !== 'string') return undefined;
+    const handler = handlers[message.method];
+    if (typeof handler !== 'function') return undefined;
+    const params = Array.isArray(message.params) ? message.params : [];
+    return rulesReady.then(() => handler(sender || {}, ...params));
+  });
 }());

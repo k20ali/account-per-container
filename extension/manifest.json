@@ -1,33 +1,28 @@
 {
-
   "manifest_version": 2,
   "name": "__MSG_extensionName__",
   "description": "__MSG_extensionDescription__",
-  "version": "1.1.3",
+  "version": "1.2.0",
   "default_locale": "en",
-
   "icons": {
     "48": "icon.svg"
   },
-
   "permissions": [
     "storage",
     "contextualIdentities",
     "cookies",
-    "tabs",
-
-    "<all_urls>"
+    "http://*/*",
+    "https://*/*"
   ],
-
   "background": {
     "scripts": [
       "background.js"
     ]
   },
-
   "content_scripts": [
     {
       "matches": [
+        "http://*/*",
         "https://*/*"
       ],
       "js": [
@@ -35,26 +30,27 @@
       ]
     }
   ],
-
   "page_action": {
     "browser_style": true,
     "default_popup": "pageaction.html",
     "default_title": "__MSG_extensionButtonTitle__",
     "default_icon": "icon-blue.svg"
   },
-
   "options_ui": {
     "browser_style": false,
     "page": "options.html"
   },
-
   "incognito": "not_allowed",
-
-  "applications": {
+  "browser_specific_settings": {
     "gecko": {
-      "id": "{bb1b34f2-0bfd-4bf5-a2b0-dd9d0a2faf01}",
-      "strict_min_version": "60.0"
+      "id": "{8f0db8b6-12fc-49b5-bb86-7cf9ab4b6302}",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "authenticationInfo",
+          "browsingActivity"
+        ]
+      }
     }
   }
-
 }
