@@ -10,6 +10,7 @@
   "permissions": [
     "storage",
     "contextualIdentities",
+    "cookies",
     "http://*/*",
     "https://*/*"
   ],
@@ -50,9 +51,6 @@
           "browsingActivity"
         ]
       }
-    },
-    "gecko_android": {
-      "strict_min_version": "142.0"
     }
   }
 }
