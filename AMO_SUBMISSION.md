@@ -43,7 +43,7 @@ This is an independently maintained fork of https://github.com/tiansh/account-pe
 
 **Support email:** Not supplied. Use an email address you control if you want one shown in the listing; do not invent an address.
 
-**Privacy policy:** After the branch is merged, use https://github.com/k20ali/account-per-container/blob/master/PRIVACY_POLICY.md. Before merge, the branch copy is available at https://github.com/k20ali/account-per-container/blob/fix/reliability-hardening/PRIVACY_POLICY.md.
+**Privacy policy:** Use the public privacy policy at https://github.com/k20ali/account-per-container/blob/master/PRIVACY_POLICY.md.
 
 **Experimental listing flag:** Leave unchecked only if you consider the add-on ready for general use after reviewing the release checklist and AMO validator results.
 
@@ -60,6 +60,6 @@ This is an independently maintained fork of https://github.com/tiansh/account-pe
 
 This is an unminified, readable WebExtension; there is no bundling or transpilation step. Source and test instructions are in the public repository branch fix/reliability-hardening.
 
-To test: install the package in Firefox desktop 140 or newer; ensure container tabs are available; open an HTTP/HTTPS page with a plain login form inside a container; type a username; use the extension icon to save a rule; reload the page and verify the username is filled; verify a non-empty username is not overwritten; remove the rule in the options page and verify it stays removed. No test credentials are needed.
+To test: install the package in Firefox desktop 142 or newer; ensure container tabs are available; open an HTTP/HTTPS page with a plain login form inside a container; type a username; use the extension icon to save a rule; reload the page and verify the username is filled; verify a non-empty username is not overwritten; remove the rule in the options page and verify it stays removed. No test credentials are needed.
 
 The maintainer reports that they tried the test build and observed no issue. The exact Firefox build and per-scenario manual-test matrix have not been recorded in the repository, so reviewers should still perform the steps above.
