@@ -58,7 +58,7 @@ This is an independently maintained fork of https://github.com/tiansh/account-pe
 
 ## Reviewer notes
 
-This is an unminified, readable WebExtension; there is no bundling or transpilation step. Source and test instructions are in the public repository branch fix/reliability-hardening.
+This is an unminified, readable WebExtension; there is no bundling or transpilation step. Source and test instructions are in the public repository's master branch.
 
 To test: install the package in Firefox desktop 142 or newer; ensure container tabs are available; open an HTTP/HTTPS page with a plain login form inside a container; type a username; use the extension icon to save a rule; reload the page and verify the username is filled; verify a non-empty username is not overwritten; remove the rule in the options page and verify it stays removed. No test credentials are needed.
 
