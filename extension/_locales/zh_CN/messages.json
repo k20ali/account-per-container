@@ -1,6 +1,6 @@
 {
   "extensionName": {
-    "message": "Account Per Container Enhanced"
+    "message": "Container Username Assistant"
   },
   "extensionDescription": {
     "message": "使用 Firefox 容器记住网站用户名，并在以后访问时自动填写。"

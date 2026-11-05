@@ -1,6 +1,6 @@
-# Account Per Container Enhanced
+# Container Username Assistant
 
-A maintained fork of [tiansh/account-per-container](https://github.com/tiansh/account-per-container). It remembers a username for a website in a Firefox container and fills it on later visits. The proposed display name distinguishes this fork from the upstream add-on; it is not an AMO approval or reservation.
+A maintained fork of [tiansh/account-per-container](https://github.com/tiansh/account-per-container). Container Username Assistant remembers a username for a website in a Firefox container and fills it on later visits. The proposed display name is distinct from upstream; it is not an AMO approval or reservation.
 
 ## Use
 

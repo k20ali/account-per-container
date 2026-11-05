@@ -1,7 +1,7 @@
 {
   "extensionName": {
-    "message": "Account Per Container Enhanced",
-    "description": "Name of this fork; distinct from the upstream add-on."
+    "message": "Container Username Assistant",
+    "description": "Proposed distinct name for this fork; not an AMO approval."
   },
   "extensionDescription": {
     "message": "Remember a username for a website in a Firefox container and fill it on future visits.",
