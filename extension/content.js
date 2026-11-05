@@ -1,129 +1,150 @@
 ; (async function () {
-
-  const isMyselfContained = function () {
-    return browser.runtime.sendMessage({ method: 'isMyselfContained' });
+  const sendMessage = function (method, params) {
+    return browser.runtime.sendMessage({ method, params });
   };
 
-  const isContained = await isMyselfContained();
-  if (!isContained) return;
+  let contained;
+  try {
+    contained = await browser.runtime.sendMessage({ method: 'isMyselfContained' });
+  } catch (error) {
+    return;
+  }
+  if (!contained) return;
 
   const getPreferedUsername = function () {
     return browser.runtime.sendMessage({ method: 'getPreferedUsername' });
   };
-
   const onUsernameChange = function (username) {
-    browser.runtime.sendMessage({ method: 'onUsernameChange', params: [username] });
-  };
-
-  /**
-   * We update password field so built-in password manager will fill password for it.
-   * @param {HTMLInputElement} input
-   * @param {string} value
-   */
-  const setInputValue = function (input, value) {
-    input.value = value;
-    if (!input.form) return;
-    Array.from(input.form.elements).forEach(element => {
-      if (element.type !== 'password') return;
-      const placeholder = document.createElement('x-temp-placeholder');
-      const parent = element.parentNode;
-      parent.replaceChild(placeholder, element);
-      parent.replaceChild(element, placeholder);
-    });
-  };
-
-  let oldValue = null;
-  /**
-   * Notice background when user inputed
-   * @param {Event} event
-   */
-  const loginInput = function (event) {
-    /** @type {HTMLInputElement} */
-    const input = event.target;
-    if (input.value === oldValue) return;
-    oldValue = input.value;
-    onUsernameChange(input.value);
-  };
-
-  /**
-   * Once login input detected, we fill it if we can, and also let background know
-   * @param {HTMLInputElement} input
-   */
-  const onLoginDetected = async function (input) {
-    input.addEventListener('input', loginInput);
-    onUsernameChange(input.value);
-    if (!input.value) {
-      const username = await getPreferedUsername();
-      if (username) setInputValue(input, username);
-      onUsernameChange(input.value);
-    }
-  };
-
-  /**
-   * In case login input is removed from document
-   * @param {HTMLInputElement} oldInput
-   */
-  const onLoginLost = function (oldInput) {
-    oldInput.removeEventListener('input', loginInput);
-  };
-
-  /**
-   * Why a website may chinging input field for login? I don't know
-   * @param {HTMLInputElement} input
-   * @param {HTMLInputElement} oldInput
-   */
-  const onLoginChanged = function (input, oldInput) {
-    oldInput.removeEventListener('input', loginInput);
-    onLoginDetected(input);
+    return sendMessage('onUsernameChange', [username]).catch(() => undefined);
   };
 
   let lastLogin = null;
-  /**
-   * Detecting login by input[type="password"]
-   * If a form contains 1~3 password inputs
-   * we consider the last text input before first password input username
-   */
-  const detectLogin = function () {
-    const forms = document.forms;
-    const logins = Array.from(forms).map(form => {
-      const elements = form.elements;
-      let lastText = null;
-      let lastTextLike = null;
-      let lastPassword = null;
-      let passwordCount = null;
-      let username = null;
-      for (let i = 0; i < elements.length; i++) {
-        const element = elements[i];
-        if (element.type === 'password') {
-          passwordCount++;
-          if (passwordCount > 3) return null;
-          if (!lastPassword) {
-            lastPassword = element;
-            username = lastText || lastTextLike;
-          }
-        } else if (element.type === 'text') {
-          lastText = element;
-        } else if (element.type === 'email') {
-          lastTextLike = element;
-        } else if (element.type === 'tel') {
-          lastTextLike = element;
-        }
-      }
-      return username;
-    });
-    const login = logins.find(login => login) || null;
-    if (login !== lastLogin) {
-      if (!lastLogin) onLoginDetected(login);
-      else if (!login) onLoginLost(lastLogin);
-      else onLoginChanged(login, lastLogin);
-    }
+  let userEditedAnyLogin = false;
+  let autofillAttempted = false;
+  let detectionScheduled = false;
+  const loginStates = new WeakMap();
+
+  const isUsernameCandidate = function (element) {
+    return element instanceof HTMLInputElement &&
+      ['text', 'email', 'tel'].includes(element.type) &&
+      !element.disabled && !element.readOnly && !element.hidden &&
+      element.getAttribute('aria-hidden') !== 'true';
   };
 
-  const observer = new MutationObserver(detectLogin);
+  const setInputValue = function (input, value) {
+    if (!(input instanceof HTMLInputElement) || !input.isConnected || input.disabled || input.readOnly) return false;
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    if (!descriptor || typeof descriptor.set !== 'function') return false;
+    const state = loginStates.get(input);
+    if (!state) return false;
+
+    state.filling = true;
+    try {
+      descriptor.set.call(input, value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    } finally {
+      state.filling = false;
+    }
+
+    // Keep the upstream password-manager workaround, but don't reinsert a detached node.
+    const form = input.form;
+    if (form && form.isConnected && input.form === form) {
+      Array.from(form.elements).forEach(element => {
+        if (!(element instanceof HTMLInputElement) || element.type !== 'password' || !element.parentNode) return;
+        const parent = element.parentNode;
+        const placeholder = document.createElement('x-apc-password-placeholder');
+        try {
+          parent.replaceChild(placeholder, element);
+          if (placeholder.parentNode === parent) parent.replaceChild(element, placeholder);
+        } catch (error) {
+          if (placeholder.parentNode === parent && !element.parentNode) parent.replaceChild(element, placeholder);
+        }
+      });
+    }
+    return true;
+  };
+
+  const attachLogin = function (input) {
+    const state = { filling: false, listener: null };
+    state.listener = function () {
+      if (!state.filling) userEditedAnyLogin = true;
+      void onUsernameChange(input.value);
+    };
+    loginStates.set(input, state);
+    input.addEventListener('input', state.listener);
+    void onUsernameChange(input.value);
+
+    if (input.value !== '' || userEditedAnyLogin || autofillAttempted) return;
+    void (async function () {
+      let username;
+      try {
+        username = await getPreferedUsername();
+      } catch (error) {
+        return;
+      }
+      if (!username || lastLogin !== input || !input.isConnected || input.value !== '' ||
+          userEditedAnyLogin || autofillAttempted) return;
+      autofillAttempted = true;
+      if (setInputValue(input, username)) void onUsernameChange(input.value);
+    }());
+  };
+
+  const detachLogin = function (input) {
+    const state = loginStates.get(input);
+    if (state && state.listener) input.removeEventListener('input', state.listener);
+    loginStates.delete(input);
+  };
+
+  const findLogin = function () {
+    for (const form of Array.from(document.forms)) {
+      let lastText = null;
+      let lastTextLike = null;
+      let passwordCount = 0;
+      let username = null;
+      for (const element of Array.from(form.elements)) {
+        if (element instanceof HTMLInputElement && element.type === 'password') {
+          passwordCount += 1;
+          if (passwordCount > 3) {
+            username = null;
+            break;
+          }
+          if (passwordCount === 1) username = lastText || lastTextLike;
+        } else if (passwordCount === 0 && isUsernameCandidate(element)) {
+          if (element.type === 'text') lastText = element;
+          else lastTextLike = element;
+        }
+      }
+      if (username && username.isConnected) return username;
+    }
+    return null;
+  };
+
+  const detectLogin = function () {
+    const login = findLogin();
+    if (login === lastLogin) return;
+    const previous = lastLogin;
+    lastLogin = login;
+    if (previous) detachLogin(previous);
+    if (login) attachLogin(login);
+    else if (previous) void onUsernameChange(null);
+  };
+
+  const scheduleDetection = function () {
+    if (detectionScheduled) return;
+    detectionScheduled = true;
+    Promise.resolve().then(() => {
+      detectionScheduled = false;
+      detectLogin();
+    });
+  };
+
+  if (!document.documentElement) return;
+  const observer = new MutationObserver(scheduleDetection);
   observer.observe(document.documentElement, {
     subtree: true,
+    childList: true,
     attributes: true,
+    attributeFilter: ['type', 'name', 'autocomplete', 'disabled', 'readonly', 'hidden', 'aria-hidden'],
   });
   detectLogin();
-
 }());

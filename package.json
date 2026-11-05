@@ -1,0 +1,14 @@
+{
+  "name": "account-per-container-enhanced",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Reliability fixes for the Account Per Container Firefox extension fork",
+  "scripts": {
+    "check": "node scripts/check.js",
+    "test": "node --test",
+    "validate": "npm run check && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
