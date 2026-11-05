@@ -18,7 +18,7 @@
 - [x] AMO upload ZIP created with manifest.json at ZIP root; content list and SHA-256 verified.
 - [x] Maintainer-reported smoke test: user says they tested the extension and observed no problems; Firefox version and detailed scenarios are not recorded.
 - [ ] Run web-ext lint and web-ext build in a network-enabled environment. They could not be installed in this environment because npm registry DNS resolution failed.
-- [ ] Re-test the final packaged ZIP in Firefox desktop 140+.
+- [ ] Re-test the final packaged ZIP in Firefox desktop 142+.
 - [ ] Record Firefox version and the scenarios actually exercised in LIVE_TEST_PLAN.md.
 - [ ] Review all AMO validator warnings before submitting.
 
