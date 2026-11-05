@@ -19,4 +19,4 @@ This is the first proposed maintenance version in this fork, based on the upstre
 
 ## Compatibility
 
-This release targets Firefox desktop 140 or later. Firefox Android is not advertised as supported.
+This release targets Firefox desktop 142 or later. The higher minimum avoids the AMO Android data-consent compatibility warning without declaring Android support. Firefox Android is not advertised as supported.
