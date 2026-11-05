@@ -22,7 +22,7 @@ See PRIVACY_POLICY.md for details.
 
 ## Install locally
 
-Open about:debugging#/runtime/this-firefox in Firefox desktop 140 or newer, choose Load Temporary Add-on, and select extension/manifest.json. A temporary installation is removed when Firefox restarts.
+Open about:debugging#/runtime/this-firefox in Firefox desktop 142 or newer, choose Load Temporary Add-on, and select extension/manifest.json. A temporary installation is removed when Firefox restarts.
 
 This release targets Firefox desktop only. Android is not advertised as supported because its container user interface differs from desktop Firefox.
 
