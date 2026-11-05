@@ -56,6 +56,6 @@ assert.ok(!manifest.permissions.includes('tabs'), 'Broad HTTP(S) host permission
 assert.ok(!manifest.browser_specific_settings.gecko_android, 'This release is not advertised as supporting Firefox Android');
 assert.ok(manifest.browser_specific_settings.gecko.data_collection_permissions.required.includes('authenticationInfo'), 'Saved usernames must be declared');
 assert.ok(manifest.browser_specific_settings.gecko.data_collection_permissions.required.includes('browsingActivity'), 'Saved website hosts must be declared');
-assert.ok(Number.parseInt(manifest.browser_specific_settings.gecko.strict_min_version, 10) >= 140, 'Built-in data consent requires Firefox 140+ unless a custom fallback is implemented');
+assert.ok(Number.parseInt(manifest.browser_specific_settings.gecko.strict_min_version, 10) >= 142, 'This desktop-only AMO release requires Firefox 142+ to avoid the Android data-consent minimum-version warning');
 assert.equal(english.extensionName.message, 'Container Username Assistant', 'Fork display name must remain distinct from upstream');
 process.stdout.write('Manifest, privacy and locale policy checks OK\n');
