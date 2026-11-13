@@ -1,4 +1,4 @@
-# Release Checklist — Container Username Assistant 1.2.0
+# Release Checklist — Container Username Assistant 1.2.1
 
 ## Prepared in the repository
 
