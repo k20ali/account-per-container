@@ -95,12 +95,31 @@
     loginStates.delete(input);
   };
 
+  const hasUsernameSignal = function (input) {
+    const autocomplete = (input.getAttribute('autocomplete') || '').trim().toLowerCase();
+    if (autocomplete.split(/\\s+/).includes('username')) return true;
+
+    const attributes = [
+      input.getAttribute('name'),
+      input.getAttribute('id'),
+      input.getAttribute('placeholder'),
+      input.getAttribute('aria-label'),
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    // Prefer explicit identity hints; avoid treating arbitrary text/email fields as logins.
+    const compact = attributes.replace(/[^a-z0-9]/g, '');
+    if (/(search|newsletter|subscribe)/.test(compact)) return false;
+    return /(username|userid|user|email|login|identifier|account)/.test(compact);
+  };
+
   const findLogin = function () {
     for (const form of Array.from(document.forms)) {
       let lastText = null;
       let lastTextLike = null;
       let passwordCount = 0;
       let username = null;
+      const candidates = [];
+
       for (const element of Array.from(form.elements)) {
         if (element instanceof HTMLInputElement && element.type === 'password') {
           passwordCount += 1;
@@ -109,12 +128,23 @@
             break;
           }
           if (passwordCount === 1) username = lastText || lastTextLike;
-        } else if (passwordCount === 0 && isUsernameCandidate(element)) {
-          if (element.type === 'text') lastText = element;
-          else lastTextLike = element;
+        } else if (isUsernameCandidate(element)) {
+          candidates.push(element);
+          if (passwordCount === 0) {
+            if (element.type === 'text') lastText = element;
+            else lastTextLike = element;
+          }
         }
       }
+
+      // Preserve the reliable classic-form heuristic when a password is present.
       if (username && username.isConnected) return username;
+
+      // Multi-step login pages often show only the identifier field initially.
+      // Accept only fields with explicit username/email/login semantics to reduce
+      // false positives from search boxes, newsletter forms, and unrelated inputs.
+      const explicitCandidate = candidates.find(input => hasUsernameSignal(input));
+      if (explicitCandidate && explicitCandidate.isConnected) return explicitCandidate;
     }
     return null;
   };
