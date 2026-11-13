@@ -49,14 +49,18 @@ This is an independently maintained fork of https://github.com/tiansh/account-pe
 
 ## Release notes for 1.2.1
 
-- Fix rule deletion persistence and rollback behavior when storage writes fail.
-- Handle missing tabs, deleted containers, malformed rules, and unsupported URLs safely.
-- Detect inserted or replaced login inputs on dynamic pages and detach obsolete listeners.
-- Avoid overwriting a non-empty username and reduce autofill races after a user edit.
-- Add HTTP matching as well as HTTPS.
-- Detect login dialogs revealed by ancestor class/style changes, including the tested Soft98 login dialog.
-- Add a regression test for this dynamic login-dialog behavior.
-- Retain the Firefox desktop 142 minimum and data-consent declaration.
+This maintenance release consolidates the reliability fixes and regression coverage identified so far.
+
+- Fix rule-removal persistence and restore in-memory state if a storage write fails.
+- Handle missing active tabs, stale tab context, deleted containers, missing container metadata, malformed saved rules, and unsupported URLs safely.
+- Detect login fields that are inserted or replaced dynamically, and detach listeners from obsolete fields.
+- Re-check login forms when relevant field attributes change or a previously hidden login dialog is revealed by changes to an ancestor's class, style, or visibility attributes.
+- Limit ancestor-attribute-triggered checks to changed elements containing likely credential fields.
+- Fill controlled username inputs using the native setter and a bubbling input event.
+- Avoid overwriting non-empty username fields and avoid refilling after deliberate user edits.
+- Support both HTTP and HTTPS login pages.
+- Add automated regression tests for the identified dynamic-field and login-dialog behaviors.
+- Retain the Firefox desktop 142 minimum and existing data-consent declaration.
 
 ## Reviewer notes
 
@@ -64,4 +68,4 @@ This is an unminified, readable WebExtension; there is no bundling or transpilat
 
 To test: install the package in Firefox desktop 142 or newer; ensure container tabs are available; open an HTTP/HTTPS page with a plain login form inside a container; type a username; use the extension icon to save a rule; reload the page and verify the username is filled; verify a non-empty username is not overwritten; remove the rule in the options page and verify it stays removed. No test credentials are needed.
 
-The maintainer reports that the Soft98 login dialog was tested and the extension's Add option appeared and allowed saving the username. The exact Firefox build and full per-scenario manual-test matrix have not been recorded in the repository, so reviewers should still perform the steps above.
+The maintainer has manually tested the dynamic login-dialog behavior. The exact Firefox build and full per-scenario manual-test matrix have not been recorded in the repository, so reviewers should still perform the steps above.
