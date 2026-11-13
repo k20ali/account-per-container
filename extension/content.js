@@ -143,7 +143,8 @@
     if (record.type === 'childList') return true;
 
     const target = record.target;
-    if (target instanceof HTMLInputElement || target instanceof HTMLFormElement) return true;
+    if (target instanceof HTMLInputElement ||
+        (typeof HTMLFormElement !== 'undefined' && target instanceof HTMLFormElement)) return true;
 
     // Some login dialogs (including Soft98) keep their form in the DOM while
     // hidden, then reveal it by changing an ancestor's class or style.
