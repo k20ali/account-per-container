@@ -3,42 +3,44 @@
 ## Baseline
 
 - Target repository: https://github.com/k20ali/account-per-container
-- Upstream: https://github.com/tiansh/account-per-container
-- Original baseline commit: 6fa2a3c751ca9b1dce7b96ab193df295e8191669
-- Observed upstream version: 1.1.3
-- License: MPL-2.0
-- Proposed release: 1.2.0 (not yet published)
-- Proposed display name: Container Username Assistant
-- Manifest V2 is retained for this maintenance release; no AMO listing or approval is claimed.
+- Upstream project: https://github.com/tiansh/account-per-container
+- Observed upstream baseline version: 1.1.3 at the time this fork was reviewed.
+- License: Mozilla Public License 2.0 (MPL-2.0); retain upstream notices.
+- Current repository version: 1.2.1 (proposed maintenance release; not published as a GitHub Release).
+- Target: Firefox desktop 142 or later. Firefox Android is not advertised as supported.
+- Manifest V2 is retained. No AMO submission, signing, listing, or approval is claimed.
 
-## Confirmed findings and fixes
+## Confirmed findings and implemented mitigations
 
-| ID | Finding | Evidence | Resolution |
-|---|---|---|---|
-| R1 | Rule removal mutated memory without persisting. | removeRule only spliced the array. | Persist changes and roll back in-memory state if the storage write fails. |
-| R2 | Missing active tab/context and invalid URL could be dereferenced. | getPageContext accessed context without a null check; getTabInfo constructed a URL directly. | Validate tabs and HTTP(S) URLs, returning safe null/false states. |
-| R3 | DOM observer omitted child-list changes. | The observer watched subtree/attributes only. | Observe child-list mutations and coalesce rescans for SPA input replacement. |
-| R4 | Opaque/non-web URLs were not handled defensively. | Direct URL construction and host access. | Accept only HTTP(S) URLs with a host. |
-| R5 | Password counter began as null. | JavaScript treats null + 1 as 1, so this alone was not a functional defect. | Use a numeric zero counter in the revised detection logic. |
-| R6 | Missing container metadata could crash options and popup views. | Unchecked identity lookups and property access. | Guard absent metadata and render safe states. |
-| R7 | HTTP login pages were outside the original match scope. | Upstream matched HTTPS only. | Include HTTP and HTTPS host patterns. |
-| R8 | Legacy Gecko manifest metadata was used. | Upstream used applications.gecko. | Use browser_specific_settings.gecko and built-in data-consent declarations. |
-| R9 | Fork identity and version required separation. | Upstream ID/name/version were copied. | Propose distinct display name, Gecko ID and version 1.2.0; no AMO reservation or release history is claimed. |
-| P1 | Permission for contextualIdentities needs cookies in Firefox. | Current Mozilla/MDN API documentation requires both permissions. | Retain cookies in the manifest but do not call cookie read/write APIs. |
-| P2 | Previous metadata could imply Android support. | Android lacks an equivalent default container-management UI. | Remove Android compatibility metadata; target desktop Firefox only. |
-| C1 | Direct input.value assignment did not reliably notify controlled inputs. | Original content script assigned value directly. | Use the native value setter and a bubbling input event; React/Vue still need recorded real-browser validation. |
-| S1 | Dynamic input replacement could leave stale listeners. | lastLogin was not updated and child-list changes were not observed. | Track input identity, detach obsolete listeners and rescan on structural mutations. |
-| U1 | Asynchronous username lookup could race user input. | Saved username could resolve after the field changed. | Recheck input identity, current value and user-edit state before filling. |
+| ID | Finding | Resolution |
+|---|---|---|
+| R1 | Rule removal could change memory without persisting. | Persist removal and restore in-memory state if storage writes fail. |
+| R2 | Missing active-tab context and invalid URLs could cause errors. | Validate tab context and accept only supported HTTP(S) URLs with a host. |
+| R3 | Dynamic login controls could be inserted or replaced after initial detection. | Observe relevant DOM mutations, rescan forms, and detach listeners from obsolete fields. |
+| R4 | Non-web and opaque URLs were not handled defensively. | Ignore unsupported URLs safely. |
+| R5 | The original password counter used a null initial value. | Use a numeric counter; the old expression was not by itself a functional defect because JavaScript coerces null during addition. |
+| R6 | Missing container metadata could break popup/options views. | Guard missing identity metadata and render safe states. |
+| R7 | HTTP login pages were outside the original matching scope. | Include both HTTP and HTTPS pages. |
+| R8 | Legacy Gecko manifest metadata was used upstream. | Use browser_specific_settings.gecko and data-collection declarations. |
+| R9 | Fork identity needed to differ from upstream. | Use a distinct display name and Gecko ID; no AMO name or slug reservation is claimed. |
+| P1 | Firefox requires the cookies permission for contextualIdentities. | Retain the required permission; the extension does not call cookie read/write APIs. |
+| P2 | Android metadata could imply unsupported compatibility. | Target desktop Firefox only and do not advertise Android support. |
+| C1 | Direct input.value assignment may not update framework-controlled state. | Use the native input value setter and dispatch a bubbling input event. Real-browser React/Vue validation remains unrecorded. |
+| S1 | Dynamic replacement could leave stale listeners. | Track input identity, remove obsolete listeners, and rescan after structural changes. |
+| U1 | An asynchronous username lookup could race with user input. | Recheck input identity, current value, and user-edit state before filling. |
+| M1 | Multi-step login pages may show an identifier field before a password field. | A proposed change exists in PR #2, but it is not merged; the branch has diverged from master and GitHub reports it is not currently mergeable. Review/rebase and automated plus live-browser tests are required before shipping it. |
 
-## Validation
+## Current validation status
 
-- Local npm run validate: PASS on the final extension/package snapshot after manifest corrections; 15 tests, 0 failures.
-- GitHub Actions: PASS on release-preparation code commit fa783fccf12246b4efcdbe360bc3374dfbd1a0f8; see https://github.com/k20ali/account-per-container/actions/runs/42065344946.
-- Maintainer-reported smoke test: user reports trying the test build and observing no problems; detailed browser version/scenarios are not recorded.
-- AMO upload archive: created from production extension files only, with manifest.json at the ZIP root; file list, manifest and locales verified.
-- web-ext lint/build: NOT RUN here because npm registry DNS resolution failed.
-- AMO validator, signing, and reviewer approval: NOT RUN.
+- Latest observed GitHub Actions run for the current master commit: PASS — https://github.com/k20ali/account-per-container/actions/runs/43515443919
+- The repository checklist records a prior automated validation run with 15 tests and no failures. That historical result does not include the unmerged PR #2 changes.
+- A fresh local validation could not be run during this review because the environment could not resolve github.com to clone the repository.
+- web-ext lint/build: not confirmed for the current exact package.
+- Final packaged ZIP test in Firefox desktop 142+: not recorded.
+- AMO validator, submission, signing, and reviewer approval: not performed.
 
 ## Release decision
 
-Prepared for AMO validation, not yet submitted. The extension targets desktop Firefox 140+, keeps readable/unminified source, declares authenticationInfo and browsingActivity, includes a draft privacy policy and listing content, and retains the upstream MPL-2.0 license. The user reports a smoke test without observed issues; exact browser version and cases are not recorded. Name/slug availability is not reserved. A live check of the exact final package, web-ext validation, and AMO validation remain required.
+Version 1.2.1 is prepared in repository metadata but is not ready to be described as fully verified or published. Before release, run validation on the exact final commit, build and inspect the production ZIP, test that ZIP in Firefox desktop 142 or later, record the real-browser scenarios in LIVE_TEST_PLAN.md, and review AMO validator output.
+
+PR #2 must be resolved separately: it is not mergeable against the current master state and should not be force-merged or deleted without reconciling its unique changes. Branch deletion and GitHub Release creation were not performed by this audit.
