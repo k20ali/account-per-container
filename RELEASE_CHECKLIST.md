@@ -18,6 +18,7 @@
 - [x] AMO upload ZIP created with manifest.json at ZIP root; content list and SHA-256 verified.
 - [x] Maintainer-reported smoke test: user says they tested the extension and observed no problems; Firefox version and detailed scenarios are not recorded.
 - [ ] Run web-ext lint and web-ext build in a network-enabled environment. They could not be installed in this environment because npm registry DNS resolution failed.
+- [ ] Resolve PR #2 (multi-step login detection) explicitly. It is not merged, its branch has diverged from master, and GitHub currently reports it as not mergeable; do not assume its changes are in 1.2.1.
 - [ ] Re-test the final packaged ZIP in Firefox desktop 142+.
 - [ ] Record Firefox version and the scenarios actually exercised in LIVE_TEST_PLAN.md.
 - [ ] Review all AMO validator warnings before submitting.
@@ -48,4 +49,4 @@ The generated ZIP is in the artifacts folder. Upload the ZIP containing the exte
 
 ## Current status
 
-Prepared for AMO validation, not yet submitted. CI and mocked tests passed, and the upload archive structure was checked. A live Firefox check of this exact final archive, web-ext lint/build, AMO validator, signing, and review remain outstanding.
+Prepared for AMO validation, not yet submitted. The latest observed GitHub Actions run on master passed, and a previous mocked-test run passed. PR #2 is not merged and must be resolved separately before claiming multi-step login support. A fresh validation of the exact final commit, a live Firefox check of the final archive, web-ext lint/build, AMO validator, signing, and review remain outstanding.
