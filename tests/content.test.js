@@ -68,7 +68,8 @@ async function runContentScript(options = {}) {
     },
   };
   form.parent = parent;
-  const username = options.username || new FakeInput('text', form, options.initialValue || '');
+  const username = options.username || new FakeInput(options.usernameType || 'text', form, options.initialValue || '');
+  Object.assign(username.attributes, options.usernameAttributes || {});
   const password = options.password === false ? null : new FakeInput('password', form);
   if (password) password.setParent(parent);
   username.form = form;
@@ -194,4 +195,38 @@ test('a login form revealed by an ancestor class change is detected', async () =
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(page.username.value, 'soft98-user');
   assert.ok(page.records.usernameChanges.includes('soft98-user'));
+});
+
+
+test('a username field with autocomplete=username is detected before the password step', async () => {
+  const page = await runContentScript({
+    password: false,
+    usernameType: 'email',
+    usernameAttributes: { autocomplete: 'username' },
+    preferredUsername: 'saved-user',
+  });
+  assert.equal(page.username.value, 'saved-user');
+  assert.ok(page.records.usernameChanges.includes(''));
+  assert.ok(page.records.usernameChanges.includes('saved-user'));
+  assert.equal(page.records.preferredLookups, 1);
+});
+
+test('an explicitly named email field is detected in a passwordless first step', async () => {
+  const page = await runContentScript({
+    password: false,
+    usernameType: 'email',
+    usernameAttributes: { name: 'email' },
+  });
+  assert.equal(page.records.preferredLookups, 1);
+  assert.ok(page.records.usernameChanges.includes(''));
+});
+
+test('an unrelated text field without login semantics is not treated as a username without a password', async () => {
+  const page = await runContentScript({
+    password: false,
+    usernameType: 'text',
+    usernameAttributes: { name: 'site-search' },
+  });
+  assert.equal(page.records.preferredLookups, 0);
+  assert.equal(page.records.usernameChanges.length, 0);
 });
