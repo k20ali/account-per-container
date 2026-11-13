@@ -138,13 +138,38 @@
     });
   };
 
+  const isRelevantMutation = function (record) {
+    if (!record) return false;
+    if (record.type === 'childList') return true;
+
+    const target = record.target;
+    if (target instanceof HTMLInputElement || target instanceof HTMLFormElement) return true;
+
+    // Some login dialogs (including Soft98) keep their form in the DOM while
+    // hidden, then reveal it by changing an ancestor's class or style.
+    // Re-check only when that changed ancestor contains a likely credential field.
+    if (target && typeof target.matches === 'function' &&
+        ['class', 'style', 'hidden', 'aria-hidden'].includes(record.attributeName)) {
+      const credentialSelector =
+        'input[type="password"], input[autocomplete="username"], ' +
+        'input[name*="login" i], input[id*="login" i], ' +
+        'input[name*="user" i], input[id*="user" i], ' +
+        'input[name*="email" i], input[id*="email" i]';
+      return target.matches(credentialSelector) ||
+        (typeof target.querySelector === 'function' && Boolean(target.querySelector(credentialSelector)));
+    }
+    return false;
+  };
+
   if (!document.documentElement) return;
-  const observer = new MutationObserver(scheduleDetection);
+  const observer = new MutationObserver(function (records) {
+    if (Array.isArray(records) && records.some(isRelevantMutation)) scheduleDetection();
+  });
   observer.observe(document.documentElement, {
     subtree: true,
     childList: true,
     attributes: true,
-    attributeFilter: ['type', 'name', 'autocomplete', 'disabled', 'readonly', 'hidden', 'aria-hidden'],
+    attributeFilter: ['type', 'name', 'autocomplete', 'disabled', 'readonly', 'hidden', 'aria-hidden', 'class', 'style'],
   });
   detectLogin();
 }());
