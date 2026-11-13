@@ -2,27 +2,29 @@
 
 ## 1.2.1 — proposed maintenance release (not yet published)
 
-- Detect login dialogs that are already present in the DOM but become visible after an ancestor's class or style changes, including the tested Soft98 login dialog.
-- Limit ancestor-attribute-triggered rechecks to changed elements containing likely credential fields.
-- Add a regression test for login forms revealed by an ancestor class change.
+This release consolidates the reliability fixes and regression coverage identified so far.
+
+- Fix rule-removal persistence and restore in-memory state if a storage write fails.
+- Handle missing active tabs, stale tab context, deleted containers, missing container metadata, malformed saved rules, and unsupported URLs safely.
+- Detect login fields that are inserted or replaced dynamically, and detach listeners from obsolete fields.
+- Re-check login forms when relevant field attributes change or a previously hidden login dialog is revealed by changes to an ancestor's class, style, or visibility attributes.
+- Limit ancestor-attribute-triggered checks to changed elements containing likely credential fields.
+- Fill controlled username inputs using the native setter and a bubbling input event.
+- Avoid overwriting non-empty username fields and avoid refilling after deliberate user edits.
+- Support both HTTP and HTTPS login pages.
+- Add automated regression tests for the identified dynamic-field and login-dialog behaviors.
+- Keep the extension version metadata and release documentation aligned at 1.2.1.
 - Retain the Firefox desktop 142 minimum and existing data-consent declaration.
 
 ## 1.2.0 — proposed maintenance release (not yet published)
 
 Project display name: Container Username Assistant.
 
-This is the first proposed maintenance version in this fork, based on the upstream repository's observed 1.1.3 baseline. It does not claim that intermediate upstream versions were released.
+This was the first proposed maintenance version in this fork, based on the upstream repository's observed 1.1.3 baseline. It does not claim that intermediate upstream versions were released.
 
-- Persist rule removals and restore in-memory state if a storage write fails.
-- Clean up rules when a Firefox container is deleted.
-- Validate stored rules, host names, tab context and HTTP(S) URLs.
-- Handle absent active tabs, stale context and missing container metadata.
-- Detect dynamically inserted or replaced login inputs and detach obsolete listeners.
-- Fill controlled inputs using the native setter and a bubbling input event; avoid overwriting non-empty values or refilling after deliberate user edits.
-- Support HTTP and HTTPS login pages.
 - Use a distinct display name and Gecko ID for this fork, and declare built-in data-consent categories for usernames and saved website hosts.
 - Retain the required cookies permission for Firefox's contextualIdentities API; the extension does not read cookie values.
-- Add automated regression tests, validation workflow, privacy policy, AMO listing draft, release checklist and reproducible Windows packaging script.
+- Add automated regression tests, a validation workflow, privacy policy, AMO listing draft, release checklist and reproducible Windows packaging script.
 
 ## Compatibility
 
