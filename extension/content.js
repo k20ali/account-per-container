@@ -97,7 +97,7 @@
 
   const hasUsernameSignal = function (input) {
     const autocomplete = (input.getAttribute('autocomplete') || '').trim().toLowerCase();
-    if (autocomplete.split(/\\s+/).includes('username')) return true;
+    if (autocomplete.split(/\s+/).includes('username')) return true;
 
     const attributes = [
       input.getAttribute('name'),
