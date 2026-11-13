@@ -107,8 +107,9 @@
     ].filter(Boolean).join(' ').toLowerCase();
 
     // Prefer explicit identity hints; avoid treating arbitrary text/email fields as logins.
-    return /(?:^|[\\s_\\-[\\]])(?:user(?:name)?|e-?mail|login|identifier|account|userid|user-id)(?:$|[\\s_\\-[\\]])/.test(attributes) ||
-      /identifierid|emailaddress|user(name)?field/.test(attributes.replace(/[^a-z0-9]/g, ''));
+    const compact = attributes.replace(/[^a-z0-9]/g, '');
+    if (/(search|newsletter|subscribe)/.test(compact)) return false;
+    return /(username|userid|user|email|login|identifier|account)/.test(compact);
   };
 
   const findLogin = function () {
