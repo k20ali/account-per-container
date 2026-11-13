@@ -1,6 +1,6 @@
 {
   "name": "container-username-assistant",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "Reliability and release tooling for the Container Username Assistant Firefox extension",
   "scripts": {
