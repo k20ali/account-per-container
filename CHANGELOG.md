@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.1 — proposed maintenance release (not yet published)
+
+- Detect login dialogs that are already present in the DOM but become visible after an ancestor's class or style changes, including the tested Soft98 login dialog.
+- Limit ancestor-attribute-triggered rechecks to changed elements containing likely credential fields.
+- Add a regression test for login forms revealed by an ancestor class change.
+- Retain the Firefox desktop 142 minimum and existing data-consent declaration.
+
 ## 1.2.0 — proposed maintenance release (not yet published)
 
 Project display name: Container Username Assistant.

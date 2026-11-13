@@ -131,8 +131,16 @@ async function runContentScript(options = {}) {
       form.elements[0] = replacement;
       username.isConnected = false;
       username.parentNode = null;
-      observerCallback();
+      observerCallback([{ type: 'childList', target: parent }]);
       return replacement;
+    },
+    revealLogin() {
+      document.forms.push(form);
+      observerCallback([{
+        type: 'attributes',
+        attributeName: 'class',
+        target: { matches: () => false, querySelector: () => true },
+      }]);
     },
   };
 }
@@ -176,4 +184,14 @@ test('a replacement input is detected and can receive autofill when no user edit
   assert.equal(replacement.value, 'new-saved-user');
   assert.equal(page.records.preferredLookups, 2);
   assert.equal(page.username.listeners.get('input').size, 0);
+});
+
+
+test('a login form revealed by an ancestor class change is detected', async () => {
+  const page = await runContentScript({ withForm: false, preferredUsername: 'soft98-user' });
+  page.revealLogin();
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(page.username.value, 'soft98-user');
+  assert.ok(page.records.usernameChanges.includes('soft98-user'));
 });

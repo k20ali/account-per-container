@@ -9,7 +9,7 @@ This document is a copy-ready draft for the Firefox Add-ons (AMO) submission for
 **Suggested URL slug:** container-username-assistant  
 AMO confirms URL-slug availability in its submission form; this slug is not reserved.
 
-**Version:** 1.2.0 (first proposed maintenance release based on the observed upstream 1.1.3 baseline; not yet published)
+**Version:** 1.2.1 (proposed maintenance release; not yet published)
 
 **Summary:**
 Save a username for each website and Firefox container, then fill it on later visits. Review or delete saved rules at any time.
@@ -47,14 +47,16 @@ This is an independently maintained fork of https://github.com/tiansh/account-pe
 
 **Experimental listing flag:** Leave unchecked only if you consider the add-on ready for general use after reviewing the release checklist and AMO validator results.
 
-## Release notes for 1.2.0
+## Release notes for 1.2.1
 
 - Fix rule deletion persistence and rollback behavior when storage writes fail.
 - Handle missing tabs, deleted containers, malformed rules, and unsupported URLs safely.
 - Detect inserted or replaced login inputs on dynamic pages and detach obsolete listeners.
 - Avoid overwriting a non-empty username and reduce autofill races after a user edit.
 - Add HTTP matching as well as HTTPS.
-- Update manifest metadata, data-consent declarations, project documentation, and automated regression tests.
+- Detect login dialogs revealed by ancestor class/style changes, including the tested Soft98 login dialog.
+- Add a regression test for this dynamic login-dialog behavior.
+- Retain the Firefox desktop 142 minimum and data-consent declaration.
 
 ## Reviewer notes
 
@@ -62,4 +64,4 @@ This is an unminified, readable WebExtension; there is no bundling or transpilat
 
 To test: install the package in Firefox desktop 142 or newer; ensure container tabs are available; open an HTTP/HTTPS page with a plain login form inside a container; type a username; use the extension icon to save a rule; reload the page and verify the username is filled; verify a non-empty username is not overwritten; remove the rule in the options page and verify it stays removed. No test credentials are needed.
 
-The maintainer reports that they tried the test build and observed no issue. The exact Firefox build and per-scenario manual-test matrix have not been recorded in the repository, so reviewers should still perform the steps above.
+The maintainer reports that the Soft98 login dialog was tested and the extension's Add option appeared and allowed saving the username. The exact Firefox build and full per-scenario manual-test matrix have not been recorded in the repository, so reviewers should still perform the steps above.
