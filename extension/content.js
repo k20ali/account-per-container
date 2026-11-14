@@ -151,21 +151,25 @@
   };
 
   const findLogin = function () {
+    const forms = Array.from(document.forms || []);
+    // Prefer a document-wide scan so custom login widgets outside <form> are also supported.
+    const inputs = typeof document.querySelectorAll === 'function'
+      ? Array.from(document.querySelectorAll('input'))
+      : forms.flatMap(form => Array.from(form.elements || []));
+    const formSet = new Set(forms);
     const candidates = [];
     const passwords = [];
 
-    for (const form of Array.from(document.forms)) {
-      const elements = Array.from(form.elements || []);
-      for (let index = 0; index < elements.length; index += 1) {
-        const input = elements[index];
-        if (!(input instanceof HTMLInputElement)) continue;
-        if (input.type === 'password' && input.isConnected && !input.disabled && !input.hidden) {
-          passwords.push({ input, index, form });
-        }
-        if (isUsernameCandidate(input)) {
-          const score = scoreUsername(input);
-          if (score > -50) candidates.push({ input, index, form, score });
-        }
+    for (let index = 0; index < inputs.length; index += 1) {
+      const input = inputs[index];
+      if (!(input instanceof HTMLInputElement) || !input.isConnected) continue;
+      const form = input.form && formSet.has(input.form) ? input.form : null;
+      if (input.type === 'password' && !input.disabled && !input.hidden) {
+        passwords.push({ input, index, form });
+      }
+      if (isUsernameCandidate(input)) {
+        const score = scoreUsername(input);
+        if (score > -50) candidates.push({ input, index, form, score });
       }
     }
 
@@ -174,10 +178,10 @@
     let bestScore = -Infinity;
     for (const password of passwords) {
       for (const candidate of candidates) {
-        if (candidate.index >= password.index && candidate.form === password.form) continue;
+        if (candidate.index >= password.index) continue;
         if (password.form && candidate.form && candidate.form !== password.form) continue;
-        const sameForm = candidate.form === password.form;
-        const distance = Math.abs(password.index - candidate.index);
+        const sameForm = Boolean(password.form && candidate.form === password.form);
+        const distance = password.index - candidate.index;
         if (!sameForm && password.form && !candidate.form && distance > 3) continue;
         if (!sameForm && !password.form && candidate.form && distance > 3) continue;
         if (!sameForm && candidate.score < 4 && distance > 4) continue;
@@ -202,7 +206,7 @@
         explicitScore = candidate.score;
       }
     }
-    // Some phone/email first steps have only one credential-like field and non-English labels.
+    // Some phone/email first steps have only one credential-like control and non-English labels.
     if (!explicitBest && candidates.length === 1) {
       const only = candidates[0].input;
       const autocomplete = (only.getAttribute('autocomplete') || '').toLowerCase();
