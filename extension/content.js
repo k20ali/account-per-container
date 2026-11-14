@@ -24,13 +24,6 @@
   let detectionScheduled = false;
   const loginStates = new WeakMap();
 
-  const isUsernameCandidate = function (element) {
-    return element instanceof HTMLInputElement &&
-      ['text', 'email', 'tel'].includes(element.type) &&
-      !element.disabled && !element.readOnly && !element.hidden &&
-      element.getAttribute('aria-hidden') !== 'true';
-  };
-
   const setInputValue = function (input, value) {
     if (!(input instanceof HTMLInputElement) || !input.isConnected || input.disabled || input.readOnly) return false;
     const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
