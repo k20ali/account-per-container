@@ -143,9 +143,10 @@
     else if (autocomplete === 'email') score += 5;
     else if (['tel', 'tel-national', 'tel-local'].includes(autocomplete)) score += 5;
     if (USERNAME_WORDS.test(name)) score += 6;
-    if (USERNAME_TEXT.test(descriptiveText)) score += 5;
+    if (USERNAME_TEXT.test(descriptiveText) || PERSIAN_USERNAME_TEXT.test(descriptiveText)) score += 5;
     if (input.type === 'email') score += 2;
-    if (USERNAME_TEXT.test(allText) && !USERNAME_TEXT.test(descriptiveText)) score += 2;
+    if ((USERNAME_TEXT.test(allText) || PERSIAN_USERNAME_TEXT.test(allText)) &&
+        !USERNAME_TEXT.test(descriptiveText) && !PERSIAN_USERNAME_TEXT.test(descriptiveText)) score += 2;
     if (formText && LOGIN_CONTEXT.test(formText)) score += 3;
     return score;
   };
