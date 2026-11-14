@@ -24,13 +24,6 @@
   let detectionScheduled = false;
   const loginStates = new WeakMap();
 
-  const isUsernameCandidate = function (element) {
-    return element instanceof HTMLInputElement &&
-      ['text', 'email', 'tel'].includes(element.type) &&
-      !element.disabled && !element.readOnly && !element.hidden &&
-      element.getAttribute('aria-hidden') !== 'true';
-  };
-
   const setInputValue = function (input, value) {
     if (!(input instanceof HTMLInputElement) || !input.isConnected || input.disabled || input.readOnly) return false;
     const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
@@ -95,58 +88,129 @@
     loginStates.delete(input);
   };
 
-  const hasUsernameSignal = function (input) {
-    const autocomplete = (input.getAttribute('autocomplete') || '').trim().toLowerCase();
-    if (autocomplete.split(/\s+/).includes('username')) return true;
+  const USERNAME_WORDS = /(?:^|[\s_.\-[\]])(?:user(?:name)?|login|logon|email|e-mail|identifier|account|member|customer|phone|mobile)(?:$|[\s_.\-[\]])/i;
+  const USERNAME_TEXT = /user\s*name|e-?mail|log\s*in|sign\s*in|account|identifier|phone|mobile|\b(?:tel|telephone)\b/i;
+  const PERSIAN_USERNAME_TEXT = /ورود|وارد|نام\s*کاربری|ایمیل|شماره|موبایل|تلفن|شناسه|حساب|گذرواژه|رمز/;
+  const LOGIN_CONTEXT = /log\s*in|sign\s*in|login|signin|username|password|account|credential|ورود|وارد|نام\s*کاربری|رمز|گذرواژه|حساب/i;
+  const NEGATIVE_WORDS = /search|newsletter|subscribe|subscription|filter|query|coupon|promo|invite|referral|comment|message|chat/i;
+  const NON_USERNAME_AUTOCOMPLETE = new Set(['current-password', 'new-password', 'one-time-code', 'cc-number']);
 
-    const attributes = [
+  const getFieldText = function (input) {
+    const values = [
       input.getAttribute('name'),
       input.getAttribute('id'),
+      input.getAttribute('autocomplete'),
       input.getAttribute('placeholder'),
       input.getAttribute('aria-label'),
-    ].filter(Boolean).join(' ').toLowerCase();
+      input.getAttribute('title'),
+    ];
+    if (input.labels) {
+      for (const label of Array.from(input.labels)) values.push(label.textContent || '');
+    }
+    return values.filter(Boolean).join(' ').toLowerCase();
+  };
 
-    // Prefer explicit identity hints; avoid treating arbitrary text/email fields as logins.
-    const compact = attributes.replace(/[^a-z0-9]/g, '');
-    if (/(search|newsletter|subscribe)/.test(compact)) return false;
-    return /(username|userid|user|email|login|identifier|account)/.test(compact);
+  const isUsernameCandidate = function (input) {
+    if (!(input instanceof HTMLInputElement)) return false;
+    const autocomplete = (input.getAttribute('autocomplete') || '').toLowerCase();
+    const fieldIdentity = [input.getAttribute('name'), input.getAttribute('id')].filter(Boolean).join(' ').toLowerCase();
+    const strongNumberSignal = autocomplete === 'username' ||
+      /(?:^|[\s_.-])(?:phone(?:number)?|mobile(?:number)?|tel(?:ephone)?|user(?:name)?|login)(?:$|[\s_.-])/i.test(fieldIdentity);
+    if (!['text', 'email', 'tel'].includes(input.type) &&
+        !(input.type === 'number' && strongNumberSignal)) return false;
+    if (input.disabled || input.readOnly || input.hidden || input.getAttribute('aria-hidden') === 'true') return false;
+    if (NON_USERNAME_AUTOCOMPLETE.has(autocomplete)) return false;
+    return true;
+  };
+
+  const scoreUsername = function (input) {
+    const name = [input.getAttribute('name'), input.getAttribute('id')].filter(Boolean).join(' ').toLowerCase();
+    const autocomplete = (input.getAttribute('autocomplete') || '').toLowerCase();
+    const descriptiveText = ['placeholder', 'aria-label', 'title']
+      .map(attribute => input.getAttribute(attribute)).filter(Boolean).join(' ').toLowerCase();
+    const allText = getFieldText(input);
+    const formText = input.form ? (input.form.textContent || '').toLowerCase().slice(0, 4000) : '';
+
+    if (NEGATIVE_WORDS.test(name) || NEGATIVE_WORDS.test(descriptiveText)) return -100;
+    let score = 0;
+    if (autocomplete === 'username') score += 12;
+    else if (autocomplete === 'email') score += 5;
+    else if (['tel', 'tel-national', 'tel-local'].includes(autocomplete)) score += 5;
+    if (USERNAME_WORDS.test(name)) score += 6;
+    if (USERNAME_TEXT.test(descriptiveText) || PERSIAN_USERNAME_TEXT.test(descriptiveText)) score += 5;
+    if (input.type === 'email') score += 2;
+    if ((USERNAME_TEXT.test(allText) || PERSIAN_USERNAME_TEXT.test(allText)) &&
+        !USERNAME_TEXT.test(descriptiveText) && !PERSIAN_USERNAME_TEXT.test(descriptiveText)) score += 2;
+    if (formText && LOGIN_CONTEXT.test(formText)) score += 3;
+    return score;
   };
 
   const findLogin = function () {
-    for (const form of Array.from(document.forms)) {
-      let lastText = null;
-      let lastTextLike = null;
-      let passwordCount = 0;
-      let username = null;
-      const candidates = [];
+    const forms = Array.from(document.forms || []);
+    // Prefer a document-wide scan so custom login widgets outside <form> are also supported.
+    const inputs = typeof document.querySelectorAll === 'function'
+      ? Array.from(document.querySelectorAll('input'))
+      : forms.flatMap(form => Array.from(form.elements || []));
+    const formSet = new Set(forms);
+    const candidates = [];
+    const passwords = [];
 
-      for (const element of Array.from(form.elements)) {
-        if (element instanceof HTMLInputElement && element.type === 'password') {
-          passwordCount += 1;
-          if (passwordCount > 3) {
-            username = null;
-            break;
-          }
-          if (passwordCount === 1) username = lastText || lastTextLike;
-        } else if (isUsernameCandidate(element)) {
-          candidates.push(element);
-          if (passwordCount === 0) {
-            if (element.type === 'text') lastText = element;
-            else lastTextLike = element;
-          }
+    for (let index = 0; index < inputs.length; index += 1) {
+      const input = inputs[index];
+      if (!(input instanceof HTMLInputElement) || !input.isConnected) continue;
+      const form = input.form && formSet.has(input.form) ? input.form : null;
+      if (input.type === 'password' && !input.disabled && !input.hidden) {
+        passwords.push({ input, index, form });
+      }
+      if (isUsernameCandidate(input)) {
+        const score = scoreUsername(input);
+        if (score > -50) candidates.push({ input, index, form, score });
+      }
+    }
+
+    // Prefer candidates before a password field, weighting same-form and nearby fields.
+    let best = null;
+    let bestScore = -Infinity;
+    for (const password of passwords) {
+      for (const candidate of candidates) {
+        if (candidate.index >= password.index) continue;
+        if (password.form && candidate.form && candidate.form !== password.form) continue;
+        const sameForm = Boolean(password.form && candidate.form === password.form);
+        const distance = password.index - candidate.index;
+        if (!sameForm && password.form && !candidate.form && distance > 3) continue;
+        if (!sameForm && !password.form && candidate.form && distance > 3) continue;
+        if (!sameForm && candidate.score < 4 && distance > 4) continue;
+        let score = candidate.score + (sameForm ? 10 : 0) + (distance <= 2 ? 3 : distance <= 5 ? 1 : 0);
+        if (candidate.input.type === 'email') score += 1;
+        if (score > bestScore) {
+          best = candidate.input;
+          bestScore = score;
         }
       }
-
-      // Preserve the reliable classic-form heuristic when a password is present.
-      if (username && username.isConnected) return username;
-
-      // Multi-step login pages often show only the identifier field initially.
-      // Accept only fields with explicit username/email/login semantics to reduce
-      // false positives from search boxes, newsletter forms, and unrelated inputs.
-      const explicitCandidate = candidates.find(input => hasUsernameSignal(input));
-      if (explicitCandidate && explicitCandidate.isConnected) return explicitCandidate;
     }
-    return null;
+    if (best) return best;
+
+    // Do not guess across unrelated fields when a password is present but cannot be paired.
+    if (passwords.length) return null;
+
+    let explicitBest = null;
+    let explicitScore = 4;
+    for (const candidate of candidates) {
+      if (candidate.score > explicitScore) {
+        explicitBest = candidate.input;
+        explicitScore = candidate.score;
+      }
+    }
+    // Some phone/email first steps have only one credential-like control and non-English labels.
+    if (!explicitBest && candidates.length === 1) {
+      const only = candidates[0].input;
+      const autocomplete = (only.getAttribute('autocomplete') || '').toLowerCase();
+      if (only.type === 'email' || only.type === 'tel' || autocomplete === 'username' ||
+          autocomplete === 'email' || ['tel', 'tel-national', 'tel-local'].includes(autocomplete)) {
+        explicitBest = only;
+      }
+    }
+    return explicitBest;
   };
 
   const detectLogin = function () {
