@@ -230,3 +230,24 @@ test('an unrelated text field without login semantics is not treated as a userna
   assert.equal(page.records.preferredLookups, 0);
   assert.equal(page.records.usernameChanges.length, 0);
 });
+
+
+test('a phone-number field with explicit phone semantics is detected on a passwordless step', async () => {
+  const page = await runContentScript({
+    password: false,
+    usernameType: 'number',
+    usernameAttributes: { name: 'phone_number' },
+  });
+  assert.equal(page.records.preferredLookups, 1);
+  assert.ok(page.records.usernameChanges.includes(''));
+});
+
+test('a non-English username placeholder is treated as a credential signal', async () => {
+  const page = await runContentScript({
+    password: false,
+    usernameType: 'text',
+    usernameAttributes: { placeholder: 'نام کاربری' },
+  });
+  assert.equal(page.records.preferredLookups, 1);
+  assert.ok(page.records.usernameChanges.includes(''));
+});
