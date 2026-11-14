@@ -89,7 +89,8 @@
   };
 
   const USERNAME_WORDS = /(?:^|[\s_.\-[\]])(?:user(?:name)?|login|logon|email|e-mail|identifier|account|member|customer|phone|mobile)(?:$|[\s_.\-[\]])/i;
-  const USERNAME_TEXT = /user\s*name|e-?mail|log\s*in|sign\s*in|account|identifier|phone|mobile|\b(?:tel|telephone)\b|\b(?:ورود|وارد|نام\s*کاربری|ایمیل|شماره|موبایل|تلفن|شناسه|حساب|گذرواژه|رمز)\b/i;
+  const USERNAME_TEXT = /user\s*name|e-?mail|log\s*in|sign\s*in|account|identifier|phone|mobile|\b(?:tel|telephone)\b/i;
+  const PERSIAN_USERNAME_TEXT = /ورود|وارد|نام\s*کاربری|ایمیل|شماره|موبایل|تلفن|شناسه|حساب|گذرواژه|رمز/;
   const LOGIN_CONTEXT = /log\s*in|sign\s*in|login|signin|username|password|account|credential|ورود|وارد|نام\s*کاربری|رمز|گذرواژه|حساب/i;
   const NEGATIVE_WORDS = /search|newsletter|subscribe|subscription|filter|query|coupon|promo|invite|referral|comment|message|chat/i;
   const NON_USERNAME_AUTOCOMPLETE = new Set(['current-password', 'new-password', 'one-time-code', 'cc-number']);
